@@ -1,0 +1,39 @@
+---
+title: "Project ML"
+author: "Ignacio Arevalo Martin"
+date: "Sunday, November 22, 2015"
+output: html_document
+---
+```{r}
+library(caret)
+set.seed(123)
+training<-read.csv("C:/Users/Nacho/Desktop/pml-training.csv")
+#summary(training)
+```
+The first step is to choose the features to predict the "classe" label. The summary of the training dataset shows a number of features that are not useful and other that include mostly NA or #DIV0! values and must be removed. For the purpose of this analysis, only features containing "accel" in their names will be included.
+```{r}
+features<-training[grep("^accel", names(training))]
+classe<-training$classe
+training<-cbind(features,classe)
+```
+As for Cross-Validation, the given "training" is split into a training set (75%) and a test set (25%). The given "testing" set is used as validation set.
+```{r}
+inTrain<-createDataPartition(y=training$classe,p=3/4,list=FALSE)
+train<-training[inTrain,]
+test<-training[-inTrain,]
+```
+This is a multi-class classification problem. Thus, in order to solve it, the method proposed is a random forest.
+```{r}
+model<-train(classe~.,data=train,method="rf")
+predicttrain<-predict(model,train)
+confusionMatrix(predicttrain,train$classe)
+predicttest<-predict(model,test)
+confusionMatrix(predicttest,test$classe)
+```
+According to the given Confusion Matrices, the out of sample error is expected to be greater than the in sample error. According to the accuracy of the model (0.9541), the expected error should be around 5%, that is, we can expect that when evaluating the 20 study cases, one of them may not be properly identified (that is actually what happens with this model, problem id=3 is not well identified).
+```{r}
+eval<-read.csv("C:/Users/Nacho/Desktop/pml-testing.csv")
+eval<-eval[grep("^accel", names(eval))]
+prediction<-predict(model,eval)
+prediction
+```
